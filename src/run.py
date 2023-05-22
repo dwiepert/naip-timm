@@ -232,7 +232,7 @@ def main():
     parser.add_argument("-d", "--data_split_root", default='gs://ml-e107-phi-shared-aif-us-p/speech_ai/share/data_splits/amr_subject_dedup_594_train_100_test_binarized_v20220620/test.csv', help="specify file path where datasplit is located. If you give a full file path to classification, an error will be thrown. On the other hand, evaluation and embedding expects a single .csv file.")
     parser.add_argument('-l','--label_txt', default='src/labels.txt')
     parser.add_argument('--lib', default=False, type=bool, help="Specify whether to load using librosa as compared to torch audio")
-    parser.add_argument("--trained_mdl_path", default='/Users/m144443/Documents/GitHub/mayo-timm/experiments/amr_subject_dedup_594_train_100_test_binarized_v20220620_5_adam_epoch1_efficientnet_b0_mdl.pt', help="specify path to trained model")
+    parser.add_argument("--trained_mdl_path", default=None, help="specify path to trained model")
     parser.add_argument("--model_type", default='efficientnet_b0', help='specify the timm model type to initialize')
     #GCS
     parser.add_argument('-b','--bucket_name', default='ml-e107-phi-shared-aif-us-p', help="google cloud storage bucket name")
@@ -240,11 +240,11 @@ def main():
     parser.add_argument('--cloud', default=False, type=bool, help="Specify whether to save everything to cloud")
     #output
     parser.add_argument("--dataset", default=None,type=str, help="When saving, the dataset arg is used to set file names. If you do not specify, it will assume the lowest directory from data_split_root")
-    parser.add_argument("-o", "--exp_dir", default="./experiments/embedding", help='specify LOCAL output directory')
+    parser.add_argument("-o", "--exp_dir", default='./experiments', help='specify LOCAL output directory')
     parser.add_argument('--cloud_dir', default='', type=str, help="if saving to the cloud, you can specify a specific place to save to in the CLOUD bucket")
     #Mode specific
-    parser.add_argument("-m", "--mode", choices=['train','eval','extraction'], default='extraction')
-    parser.add_argument('--embedding_type', type=str, default='pt', help='specify whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)', choices=['ft','pt'])
+    parser.add_argument("-m", "--mode", choices=['train','eval','extraction'], default='train')
+    parser.add_argument('--embedding_type', type=str, default='ft', help='specify whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)', choices=['ft','pt'])
     #Audio configuration parameters
     parser.add_argument("--dataset_mean", default=-4.2677393, type=float, help="the dataset mean, used for input normalization")
     parser.add_argument("--dataset_std", default=4.5689974, type=float, help="the dataset std, used for input normalization")
@@ -280,7 +280,7 @@ def main():
     parser.add_argument("--final_dropout", type=float, default=0.3, help="specify dropout probability for final dropout layer in classification head")
     parser.add_argument("--layernorm", type=bool, default=False, help="specify whether to include the LayerNorm in classification head")
     #OTHER
-    parser.add_argument("--debug", default=True, type=bool)
+    parser.add_argument("--debug", default=False, type=bool)
     args = parser.parse_args()
     
     print('Torch version: ',torch.__version__)

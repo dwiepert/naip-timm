@@ -22,8 +22,8 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from utilities import *
 
 def train(model, dataloader_train, dataloader_val = None, 
-             optim='adamw', learning_rate=0.001, loss_fn='BCE',
-             sched='onecycle', max_lr=0.01,
+             optim='adamw', learning_rate=0.001, weight_decay=0.001, 
+             loss_fn='BCE', sched='onecycle', max_lr=0.01,
              epochs=10, exp_dir='', cloud=False, cloud_dir='', bucket=None):
     """
     Training loop for training
@@ -32,6 +32,7 @@ def train(model, dataloader_train, dataloader_val = None,
     :param dataloader_val: dataloader object with validation data
     :param optim: type of optimizer to initialize
     :param learning_rate: optimizer learning rate
+    :param weight_decay: weight decay value for adamw optimizer
     :param loss_fn: type of loss function to initialize
     :param sched: type of scheduler to initialize
     :param max_lr: max learning rate for onecycle scheduler
@@ -45,7 +46,10 @@ def train(model, dataloader_train, dataloader_val = None,
     print('Finetuning start')
     #send to gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.cuda()
+    try:
+        model = model.cuda()
+    except:
+        model = model.to(device)
 
     #loss
     if loss_fn == 'MSE':
@@ -58,7 +62,7 @@ def train(model, dataloader_train, dataloader_val = None,
     if optim == 'adam':
         optimizer = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],lr=learning_rate)
     elif optim == 'adamw':
-         optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=learning_rate)
+         optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=learning_rate, weight_decay=weight_decay)
     else:
         raise ValueError(f'Given optimizer ({optim}) not supported. Must be either adam or adamw')
     
@@ -73,8 +77,13 @@ def train(model, dataloader_train, dataloader_val = None,
         #t0 = time.time()
         model.train()
         for batch in tqdm(dataloader_train):
-            x = torch.unsqueeze(batch['fbank'],1).cuda()
-            targets = batch['targets'].cuda()
+            x = torch.unsqueeze(batch['fbank'],1)
+            targets = batch['targets']
+            try:
+                x = x.cuda()
+                targets = targets.cuda()
+            except:
+                x, targets = x.to(device), targets.to(device)
             optimizer.zero_grad()
             o = model(x)
             loss = criterion(o, targets)
@@ -146,27 +155,30 @@ def validation(model, criterion, dataloader_val):
     '''
     validation_loss = list()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.cuda()
+    try:
+        model = model.cuda()
+    except:
+        model = model.to(device)
     with torch.no_grad():
         model.eval()
         for batch in tqdm(dataloader_val):
-            x = torch.unsqueeze(batch['fbank'],1).cuda()
-            targets = batch['targets'].cuda()
+            x = torch.unsqueeze(batch['fbank'],1)
+            targets = batch['targets']
+            try:
+                x,targets = x.cuda(), targets.cuda()
+            except:
+                x, targets = x.to(device), targets.to(device)
             o = model(x)
             val_loss = criterion(o, targets)
             validation_loss.append(val_loss.item())
 
     return validation_loss
 
-def evaluation(model, dataloader_eval, exp_dir, cloud=False, cloud_dir=None, bucket=None):
+def evaluation(model, dataloader_eval):
     """
     Start model evaluation
     :param model: model
     :param dataloader_eval: dataloader object with evaluation data
-    :param exp_dir: specify LOCAL output directory as str
-    :param cloud: boolean to specify whether to save everything to google cloud storage
-    :param cloud_dir: if saving to the cloud, you can specify a specific place to save to in the CLOUD bucket
-    :param bucket: google cloud storage bucket object
     :return preds: model predictions
     :return targets: model targets (actual values)
     """
@@ -174,12 +186,19 @@ def evaluation(model, dataloader_eval, exp_dir, cloud=False, cloud_dir=None, buc
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     outputs = []
     t = []
-    model = model.cuda()
+    try:
+        model = model.cuda()
+    except:
+        model = model.to(device)
     with torch.no_grad():
         model.eval()
         for batch in tqdm(dataloader_eval):
-            x = torch.unsqueeze(batch['fbank'],1).cuda()
-            targets = batch['targets'].cuda()
+            x = torch.unsqueeze(batch['fbank'],1)
+            targets = batch['targets']
+            try:
+                x,targets = x.cuda(), targets.cuda()
+            except:
+                x, targets = x.to(device), targets.to(device)
             o = model(x)
             outputs.append(o)
             t.append(targets)
@@ -187,15 +206,6 @@ def evaluation(model, dataloader_eval, exp_dir, cloud=False, cloud_dir=None, buc
     outputs = torch.cat(outputs).cpu().detach()
     t = torch.cat(t).cpu().detach()
     # SAVE PREDICTIONS AND TARGETS 
-    pred_path = os.path.join(exp_dir, 'timm_eval_predictions.pt')
-    target_path = os.path.join(exp_dir, 'timm_eval_targets.pt')
-    torch.save(outputs, pred_path)
-    torch.save(t, target_path)
-
-    if cloud:
-        upload(cloud_dir, pred_path, bucket)
-        upload(cloud_dir, target_path, bucket)
-
     print('Evaluation finished')
     return outputs, t
 
@@ -214,12 +224,20 @@ def embedding_extraction(model, dataloader, embedding_type='ft'):
     embeddings = np.array([])
     # send to gpu
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.cuda()
+    
+    try: 
+        model = model.cuda()
+    except:
+        model = model.to(device)
 
     with torch.no_grad():
         model.eval()
         for batch in tqdm(dataloader):
-            x = torch.unsqueeze(batch['fbank'],1).cuda()
+            x = torch.unsqueeze(batch['fbank'],1)
+            try:
+                x = x.cuda()
+            except:
+                x = x.to(device)
             e = model.extract_embedding(x, embedding_type)
             if embeddings.size == 0:
                 embeddings = e

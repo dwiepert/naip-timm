@@ -51,6 +51,8 @@ class AudioDataset(Dataset):
         #set instance variables
         self.annotations_df = annotations_df
         self.target_labels = target_labels
+        if self.target_labels is None:
+            self.target_labels = np.array([])
         self.prefix = prefix
         self.bucket = bucket
         self.lib = librosa #set up using librosa vs. torchaudio for loading

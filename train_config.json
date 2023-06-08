@@ -12,7 +12,7 @@
           "bootDiskSizeGb": 100
         },
         "containerSpec": {
-          "imageUri": "us-central1-docker.pkg.dev/ml-mps-aif-afdgpet01-p-6827/phi-main-us-central1-p/speech_w2v2:m144443-latest",
+          "imageUri": "us-central1-docker.pkg.dev/ml-mps-aif-afdgpet01-p-6827/phi-main-us-central1-p/speech_timm:m144443-latest",
           "args": [
             "--prefix=speech_ai/speech_lake/",
             "--study=speech_poc_freeze_1",
@@ -21,12 +21,12 @@
             "--lib=False",
             "--model_type=efficientnet_b0",
             "--cloud=True",
-            "--cloud_dir=m144443/mayo-timm/test/",
+            "--cloud_dir=m144443/vertex/mayo-timm/train_efficientnet/",
             "--mode=train",
-            "--batch_size=8",
+            "--batch_size=32",
             "--num_workers=0",
-            "--learning_rate=0.0003",
-            "--epochs=3",
+            "--learning_rate=0.0001",
+            "--epochs=20",
             "--optim=adamw",
             "--weight_decay=0.0001",
             "--loss=BCE",

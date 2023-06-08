@@ -270,7 +270,7 @@ def main():
     parser.add_argument("-nw", "--num_workers", type=int, default=0, help="specify number of parallel jobs to run for data loader")
     parser.add_argument("-lr", "--learning_rate", type=float, default=0.0003, help="specify learning rate")
     parser.add_argument("-e", "--epochs", type=int, default=1, help="specify number of training epochs")
-    parser.add_argument("--optim", type=str, default="adam", help="training optimizer", choices=["adam", "adamw"])
+    parser.add_argument("--optim", type=str, default="adamw", help="training optimizer", choices=["adam", "adamw"])
     parser.add_argument("--weight_decay", type=float, default=.0001, help='specify weight decay for adamw')
     parser.add_argument("--loss", type=str, default="BCE", help="the loss function for finetuning, depend on the task", choices=["MSE", "BCE"])
     parser.add_argument("--scheduler", type=str, default="onecycle", help="specify lr scheduler", choices=["onecycle", None])
@@ -316,7 +316,16 @@ def main():
         args.target_labels = None
         args.n_class = 0
     else:
-        with open(args.label_txt) as f:
+        if args.label_txt[:5] =='gs://':
+            label_txt = args.label_txt[5:].replace(args.bucket_name,'')[1:]
+            bn = os.path.basename(label_txt)
+            blob = bucket.blob(label_txt)
+            blob.download_to_filename(bn)
+            label_txt = bn
+        else:
+            label_txt = args.label_txt
+    
+        with open(label_txt) as f:
             target_labels = f.readlines()
         target_labels = [l.strip() for l in target_labels]
         args.target_labels = target_labels

@@ -128,7 +128,7 @@ def eval_only(args):
     args.mixup=0 #mixup should always be 0 for evaluation only
     eval_audio_conf = {'dataset': args.dataset, 'mode': 'evaluation', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
                     'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
-                    'num_mel_bins': args.num_mel_bins, 'target_length': args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
+                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
                     'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
     
 
@@ -185,8 +185,10 @@ def get_embeddings(args):
     args.mixup=0 #mixup should always be 0 for embedding extraction
     audio_conf = {'dataset': args.dataset, 'mode': 'evaluation', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
                     'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
-                    'num_mel_bins': args.num_mel_bins, 'target_length': args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
+                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
                     'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
+    #think that num_mel_bins and target_length must be the SAME as the model you are instantiating and loading, so should use model_args - any configuration args that alter the input dims must follow that
+    #model
 
     # (3) set up dataloader with current args
     dataset = AudioDataset(annotations_df=annotations_df, target_labels=args.target_labels, audio_conf=audio_conf, 

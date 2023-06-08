@@ -239,6 +239,7 @@ def embedding_extraction(model, dataloader, embedding_type='ft'):
             except:
                 x = x.to(device)
             e = model.extract_embedding(x, embedding_type)
+            e = e.cpu().numpy()
             if embeddings.size == 0:
                 embeddings = e
             else:

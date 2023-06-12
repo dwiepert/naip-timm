@@ -9,9 +9,11 @@ class timmForSpeechClassification(nn.Module):
     """
     Create any number of timm models to train for speech classification
     """
-    def __init__(self, name, label_dim, activation='relu', final_dropout=0.2, layernorm=False):
+    def __init__(self, name, input_tdim, input_fdim, label_dim, activation='relu', final_dropout=0.2, layernorm=False):
         """
-        :parma name: timm model name, e.g. tf_efficientnet_b2_ns (str)
+        :param name: timm model name, e.g. tf_efficientnet_b2_ns (str)
+        :param input_tdim: spectrogram length
+        :param input_fdim: spectrogram height 
         :param label_dim: specify number of categories to classify
         :param activation: activation function for classification head
         :param final_dropout: amount of dropout to use in classification head

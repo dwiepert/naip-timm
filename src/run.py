@@ -71,7 +71,8 @@ def train_timm(args):
     eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     
     # (4) initialize model
-    model = timmForSpeechClassification(args.model_type, args.n_class, args.activation, args.final_dropout, args.layernorm)
+    model = timmForSpeechClassification(args.model_type, args.target_length, args.num_mel_bins,
+                                        args.n_class, args.activation, args.final_dropout, args.layernorm)
     
     #(5) run model
     model = train(model, train_loader, val_loader, 
@@ -125,7 +126,6 @@ def eval_only(args):
         eval_df = eval_df.iloc[0:8,:]
 
     #(2) set audio configurations (val loader and eval loader will both use the eval_audio_conf
-    args.mixup=0 #mixup should always be 0 for evaluation only
     eval_audio_conf = {'resample_rate': model_args.resample_rate, 'reduce': model_args.reduce, 'clip_length': model_args.clip_length,
                     'tshift':0, 'speed':0, 'gauss_noise':0, 'pshift':0, 'pshiftn':0, 'gain':0, 'stretch': 0,
                     'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': 0, 'timem': 0, 'mixup': 0, 'noise':False,
@@ -140,7 +140,8 @@ def eval_only(args):
     eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     
     # (4) initialize model
-    model = timmForSpeechClassification(model_args.model_type, model_args.n_class, model_args.activation, model_args.final_dropout, model_args.layernorm)
+    model = timmForSpeechClassification(model_args.model_type, model_args.target_length, model_args.num_mel_bins, model_args.n_class, 
+                                        model_args.activation, model_args.final_dropout, model_args.layernorm)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sd = torch.load(args.trained_mdl_path, map_location=device)
@@ -196,7 +197,8 @@ def get_embeddings(args):
 
     
     # (4) initialize model
-    model = timmForSpeechClassification(model_args.model_type, model_args.n_class, model_args.activation, model_args.final_dropout, model_args.layernorm)
+    model = timmForSpeechClassification(model_args.model_type, model_args.target_length, model_args.num_mel_bins, 
+                                        model_args.n_class, model_args.activation, model_args.final_dropout, model_args.layernorm)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sd = torch.load(args.trained_mdl_path, map_location=device)

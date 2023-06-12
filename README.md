@@ -11,7 +11,7 @@ The environment must include the following packages, all of which can be dowload
 * torch, torchvision, torchaudio
 * tqdm (this is essentially enumerate(dataloader) except it prints out a nice progress bar for you)
 * pyarrow
-* timm
+* timm (note that we use timm 0.9.2. If running into issues, consider downgrading to this version)
 
 If running on your local machine and not in a GCP environment, you will also need to install:
 * google-cloud-storage

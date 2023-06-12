@@ -1,7 +1,7 @@
 '''
 ECAPA-TDNN run function 
 
-Last modified: 05/2023
+Last modified: 06/2023
 Author: Daniela Wiepert
 Email: wiepert.daniela@mayo.edu
 File: run.py

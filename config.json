@@ -17,7 +17,7 @@
             "--prefix=TODO",
             "--study=TODO",
             "--data_split_root=TODO",
-            "--label_txt=src/labels.txt",
+            "--label_txt=TODO",
             "--lib=False",
             "--trained_mdl_path=None",
             "--model_type=efficientnet_b0",

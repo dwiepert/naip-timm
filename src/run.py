@@ -46,16 +46,16 @@ def train_timm(args):
         test_df = test_df.iloc[0:8,:]
 
     #(2) set audio configurations (val loader and eval loader will both use the eval_audio_conf
-    train_audio_conf = {'dataset': args.dataset, 'mode': 'train', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
+    train_audio_conf = {'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
                     'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
                     'num_mel_bins': args.num_mel_bins, 'target_length': args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
-                    'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
+                    'mean':args.dataset_mean, 'std':args.dataset_std}
     
     #note, mixup should always be 0 for the evaluation
-    eval_audio_conf = {'dataset': args.dataset, 'mode': 'evaluation', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
-                    'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
-                    'num_mel_bins': args.num_mel_bins, 'target_length': args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': 0, 'noise':args.noise,
-                    'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
+    eval_audio_conf = {'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
+                    'tshift':0, 'speed':0, 'gauss_noise':0, 'pshift':0, 'pshiftn':0, 'gain':0, 'stretch': 0,
+                    'num_mel_bins': args.num_mel_bins, 'target_length': args.target_length, 'freqm': 0, 'timem': 0, 'mixup': 0, 'noise':False,
+                    'mean':args.dataset_mean, 'std':args.dataset_std}
     
     #(3) Generate audio dataset, note that if bucket not given, it assumes None and loads from local files
     train_dataset = AudioDataset(annotations_df=train_df, target_labels=args.target_labels, audio_conf=train_audio_conf, 
@@ -67,7 +67,7 @@ def train_timm(args):
     
     #(4) set up data loaders (val loader always has batchsize 1)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, collate_fn=collate_fn)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, collate_fn=collate_fn)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True, collate_fn=collate_fn)
     eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     
     # (4) initialize model
@@ -126,10 +126,10 @@ def eval_only(args):
 
     #(2) set audio configurations (val loader and eval loader will both use the eval_audio_conf
     args.mixup=0 #mixup should always be 0 for evaluation only
-    eval_audio_conf = {'dataset': args.dataset, 'mode': 'evaluation', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
-                    'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
-                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
-                    'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
+    eval_audio_conf = {'resample_rate': model_args.resample_rate, 'reduce': model_args.reduce, 'clip_length': model_args.clip_length,
+                    'tshift':0, 'speed':0, 'gauss_noise':0, 'pshift':0, 'pshiftn':0, 'gain':0, 'stretch': 0,
+                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': 0, 'timem': 0, 'mixup': 0, 'noise':False,
+                    'mean':model_args.dataset_mean, 'std':model_args.dataset_std}
     
 
     # (3) set up datasets and dataloaders
@@ -182,11 +182,10 @@ def get_embeddings(args):
         annotations_df = annotations_df.iloc[0:8,:]
 
     #(2) set audio configurations
-    args.mixup=0 #mixup should always be 0 for embedding extraction
-    audio_conf = {'dataset': args.dataset, 'mode': 'evaluation', 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
-                    'tshift':args.tshift, 'speed':args.speed, 'gauss_noise':args.gauss, 'pshift':args.pshift, 'pshiftn':args.pshiftn, 'gain':args.gain, 'stretch': args.stretch,
-                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': args.freqm, 'timem': args.timem, 'mixup': args.mixup, 'noise':args.noise,
-                    'mean':args.dataset_mean, 'std':args.dataset_std, 'skip_norm':args.skip_norm}
+    audio_conf = { 'resample_rate': args.resample_rate, 'reduce': args.reduce, 'clip_length': args.clip_length,
+                    'tshift':0, 'speed':0, 'gauss_noise':0, 'pshift':0, 'pshiftn':0, 'gain':0, 'stretch': 0,
+                    'num_mel_bins': model_args.num_mel_bins, 'target_length': model_args.target_length, 'freqm': 0, 'timem': 0, 'mixup': 0, 'noise':False,
+                    'mean':model_args.dataset_mean, 'std':model_args.dataset_std}
     #think that num_mel_bins and target_length must be the SAME as the model you are instantiating and loading, so should use model_args - any configuration args that alter the input dims must follow that
     #model
 
@@ -230,16 +229,16 @@ def get_embeddings(args):
 def main():
     parser = argparse.ArgumentParser()
     #Inputs
-    parser.add_argument('-i','--prefix',default='speech_ai/speech_lake/', help='Input directory or location in google cloud storage bucket containing files to load')
-    parser.add_argument("-s", "--study", choices = ['r01_prelim','speech_poc_freeze_1', None], default='speech_poc_freeze_1', help="specify study name")
-    parser.add_argument("-d", "--data_split_root", default='gs://ml-e107-phi-shared-aif-us-p/speech_ai/share/data_splits/amr_subject_dedup_594_train_100_test_binarized_v20220620/test.csv', help="specify file path where datasplit is located. If you give a full file path to classification, an error will be thrown. On the other hand, evaluation and embedding expects a single .csv file.")
+    parser.add_argument('-i','--prefix',default='', help='Input directory or location in google cloud storage bucket containing files to load')
+    parser.add_argument("-s", "--study", default='', help="specify study name")
+    parser.add_argument("-d", "--data_split_root", default='', help="specify file path where datasplit is located. If you give a full file path to classification, an error will be thrown. On the other hand, evaluation and embedding expects a single .csv file.")
     parser.add_argument('-l','--label_txt', default='src/labels.txt')
     parser.add_argument('--lib', default=False, type=ast.literal_eval, help="Specify whether to load using librosa as compared to torch audio")
     parser.add_argument("--trained_mdl_path", default=None, help="specify path to trained model")
     parser.add_argument("--model_type", default='efficientnet_b0', help='specify the timm model type to initialize')
     #GCS
-    parser.add_argument('-b','--bucket_name', default='ml-e107-phi-shared-aif-us-p', help="google cloud storage bucket name")
-    parser.add_argument('-p','--project_name', default='ml-mps-aif-afdgpet01-p-6827', help='google cloud platform project name')
+    parser.add_argument('-b','--bucket_name', default='', help="google cloud storage bucket name")
+    parser.add_argument('-p','--project_name', default='', help='google cloud platform project name')
     parser.add_argument('--cloud', default=False, type=ast.literal_eval, help="Specify whether to save everything to cloud")
     #output
     parser.add_argument("--dataset", default=None,type=str, help="When saving, the dataset arg is used to set file names. If you do not specify, it will assume the lowest directory from data_split_root")
@@ -249,13 +248,9 @@ def main():
     parser.add_argument("-m", "--mode", choices=['train','eval','extraction'], default='train')
     parser.add_argument('--embedding_type', type=str, default='ft', help='specify whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)', choices=['ft','pt'])
     #Audio configuration parameters
-    parser.add_argument("--dataset_mean", default=-4.2677393, type=float, help="the dataset mean, used for input normalization")
-    parser.add_argument("--dataset_std", default=4.5689974, type=float, help="the dataset std, used for input normalization")
-    parser.add_argument("--target_length", default=1024, type=int, help="the input length in frames")
-    parser.add_argument("--num_mel_bins", default=128,type=int, help="number of input mel bins")
     parser.add_argument("--resample_rate", default=16000,type=int, help='resample rate for audio files')
     parser.add_argument("--reduce", default=True, type=ast.literal_eval, help="Specify whether to reduce to monochannel")
-    parser.add_argument("--clip_length", default=10.0, type=int, help="If truncating audio, specify clip length in seconds. 0 = no truncation")
+    parser.add_argument("--clip_length", default=10.0, type=float, help="If truncating audio, specify clip length in seconds. 0 = no truncation")
     parser.add_argument("--tshift", default=0, type=float, help="Specify p for time shift transformation")
     parser.add_argument("--speed", default=0, type=float, help="Specify p for speed tuning")
     parser.add_argument("--gauss", default=0, type=float, help="Specify p for adding gaussian noise")
@@ -263,11 +258,15 @@ def main():
     parser.add_argument("--pshiftn", default=0, type=float, help="Specify number of steps for pitch shifting")
     parser.add_argument("--gain", default=0, type=float, help="Specify p for gain")
     parser.add_argument("--stretch", default=0, type=float, help="Specify p for audio stretching")
+    parser.add_argument("--mixup", type=float, default=0, help="how many (0-1) samples need to be mixup during training")
+    #Spectrogram configuration parameters
+    parser.add_argument("--dataset_mean", default=-4.2677393, type=float, help="the dataset mean, used for input normalization")
+    parser.add_argument("--dataset_std", default=4.5689974, type=float, help="the dataset std, used for input normalization")
+    parser.add_argument("--target_length", default=1024, type=int, help="the input length in frames")
+    parser.add_argument("--num_mel_bins", default=128,type=int, help="number of input mel bins")
     parser.add_argument('--freqm', help='frequency mask max length', type=int, default=0)
     parser.add_argument('--timem', help='time mask max length', type=int, default=0)
-    parser.add_argument("--mixup", type=float, default=0, help="how many (0-1) samples need to be mixup during training")
     parser.add_argument("--noise", type=ast.literal_eval, default=False, help="specify if augment noise in finetuning")
-    parser.add_argument("--skip_norm", type=ast.literal_eval, default=False, help="specify whether to skip normalization on spectrogram")
     #Model parameters
     parser.add_argument("-bs", "--batch_size", type=int, default=8, help="specify batch size")
     parser.add_argument("-nw", "--num_workers", type=int, default=0, help="specify number of parallel jobs to run for data loader")
@@ -366,7 +365,6 @@ def main():
     args.bucket = bucket
 
     # (10) run model
-    print(args.mode)
     if args.mode == "train":
         train_timm(args)
 

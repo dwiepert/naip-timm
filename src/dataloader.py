@@ -59,9 +59,6 @@ class AudioDataset(Dataset):
 
         #AUDIO CONFIGURATION PARAMETERS
         self.audio_conf = audio_conf
-        print('---------------the {:s} dataloader---------------'.format(self.audio_conf.get('mode')))
-        self.dataset = self.audio_conf.get('dataset')
-        print('now process ' + self.dataset)
         ### AUDIO TRANSFORMATIONS
         self.resample_rate = self.audio_conf.get('resample_rate') #resample if resample rate != 0 and if resample rate != sample rate
         self.reduce = self.audio_conf.get('reduce') #reduce to monochannel if True
@@ -79,29 +76,16 @@ class AudioDataset(Dataset):
         self.melbins = self.audio_conf.get('num_mel_bins')
         self.freqm = self.audio_conf.get('freqm') #frequency masking if freqm != 0
         self.timem = self.audio_conf.get('timem') #time masking if timem != 0
-        print('now using following mask: {:d} freq, {:d} time'.format(self.audio_conf.get('freqm'), self.audio_conf.get('timem')))
-        print('MIXUP NOT CURRENTLY AVAILABLE')
         self.mixup = self.audio_conf.get('mixup') #mixup if mixup != 0
-        # print('now using mix-up with rate {:f}'.format(self.mixup))
         
         ## dataset spectrogram mean and std, used to normalize the input
         self.norm_mean = self.audio_conf.get('mean')
         self.norm_std = self.audio_conf.get('std')
-        ## skip_norm is a flag that if you want to skip normalization to compute the normalization stats using src/get_norm_stats.py, if Ture, input normalization will be skipped for correctly calculating the stats.
-        # set it as True ONLY when you are getting the normalization stats.
-        self.skip_norm = self.audio_conf.get('skip_norm') if self.audio_conf.get('skip_norm') else False
-        if self.skip_norm:
-            print('now skip normalization (use it ONLY when you are computing the normalization stats).')
-        else:
-            print('use dataset mean {:.3f} and std {:.3f} to normalize the input.'.format(self.norm_mean, self.norm_std))
-        ## if add noise for data augmentation
+         ## if add noise for data augmentation
         self.noise = self.audio_conf.get('noise')
-        if self.noise == True:
-            print('now use noise augmentation')
         self.target_length = self.audio_conf.get('target_length')
 
         self.label_num = len(self.target_labels)
-        print('number of classes is {:d}'.format(self.label_num))
 
         if cdo:
             self.tf_co=torch.CoarseDropout(always_apply=True,max_holes=16,min_holes=8)
@@ -199,9 +183,8 @@ class AudioDataset(Dataset):
         if self.timem != 0: 
             timem = TimeMask(self.timem)
             transform_list.append(timem)
-        if not self.skip_norm:
-            norm = Normalize(self.norm_mean, self.norm_std)
-            transform_list.append(norm)
+        norm = Normalize(self.norm_mean, self.norm_std)
+        transform_list.append(norm)
         if self.noise:
             #TODO:
             noise = Noise()
@@ -242,7 +225,7 @@ class AudioDataset(Dataset):
         
         sample = self.audio_transform(sample) #load and perform standard transformation
         if self.al_transform != []:
-            sample = self.al_transform(sample) #audio augmentations
+            sample = self.al_transform(sample=sample)["sample"] #audio augmentations
         
         #TODO: initialize mixup
         mix = Mixup()
@@ -260,7 +243,7 @@ class AudioDataset(Dataset):
             }
             sample2 = self.audio_transform(sample2) #load and perform standard transformation
             if self.al_transform != []:
-                sample2 = self.al_transform(sample2) #audio augmentations
+                sample2 = self.al_transform(sample=sample2)['sample'] #audio augmentations
 
             sample = mix(sample, sample2)
         

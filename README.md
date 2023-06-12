@@ -64,8 +64,6 @@ The audio configuration parameters should be given as a dictionary (which can be
 The following parameters are accepted (`--` indicates the command line argument to alter to set it):
 
 *Dataset Information*
-* `dataset`: a string of the dataset name. Set with `--dataset`
-* `mode`: either 'train' or 'evaluation' (this is handled in the code, the `-m, --mode` argument in the main function is a different setting)
 * `mean`: dataset mean (float). Set with `--dataset_mean`
 * `std`: dataset standard deviation (float) Set with `--dataset_std`
 *Audio Transform Information*
@@ -85,7 +83,6 @@ The following parameters are accepted (`--` indicates the command line argument 
 * `freqm`: frequency mask paramenter. Set with `--freqm`
 * `timem`: time mask parameter. Set with `--timem`
 * `noise`: add default noise to spectrogram. Set with `--noise`
-* `skip_norm`: boolean indicating whether to skip normalization of the spectrogram. Set with `--skip_norm`
 * `mixup`: parameter for file mixup (between 0 and 1). Set with `--mixup`
 
 Outside of the regular audio configurations, you can also set a boolean value for `cdo` (coarse drop out) and `shift` (affine shift) when initializing the `AudioDataset`. These are remnants of the original SSAST dataloading and not required. Both default to False. 
@@ -147,6 +144,7 @@ This mode is triggered by setting `-m, --mode` to 'train'.
 
 The classification head can be altered to use a different amount of dropout and to include/exclude layernorm. See `ClassificationHead` class in [speech_utils.py](https://github.com/dwiepert/mayo-timm/blob/main/src/utilities/speech_utils.py) for more information. 
 
+Additionally, there are data augmentation transforms available for finetuning, such as time shift, speed tuning, adding noise, pitch shift, gain, stretching audio, and audio mixup. 
 
 ### 2. Evaluation only
 If you have a trained model and want to evaluate it on a new data set, you can do so by setting `-m, --mode` to 'eval'. You must then also specify a `--trained_mdl_path` to load in. 

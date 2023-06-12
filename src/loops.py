@@ -43,7 +43,7 @@ def train(model, dataloader_train, dataloader_val = None,
     :param bucket: initialized GCS bucket object
     :return model: finetuned model
     """
-    print('Finetuning start')
+    print('Training start')
     #send to gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
@@ -141,7 +141,7 @@ def train(model, dataloader_train, dataloader_val = None,
                 upload(cloud_dir, mdl_path, bucket)
                 upload(cloud_dir, optim_path, bucket)
 
-    print('Finetuning finished')
+    print('Training finished')
     return model
 
 

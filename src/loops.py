@@ -1,7 +1,7 @@
 """
 Model loops for pretraining, finetuning, and extracting embeddings from timm models
 
-Last modified: 05/2023
+Last modified: 07/2023
 Author: Daniela Wiepert
 Email: wiepert.daniela@mayo.edu
 File: loops.py
@@ -209,14 +209,13 @@ def evaluation(model, dataloader_eval):
     print('Evaluation finished')
     return outputs, t
 
-def embedding_extraction(model, dataloader, embedding_type='ft'):
+def embedding_extraction(model, dataloader, embedding_type='ft', pooling_mode='mean'):
     """
     Run a specific subtype of evaluation for getting embeddings.
     :param model: model
     :param dataloader_eval: dataloader object with data to get embeddings for
-    :param embedding_type: string specifying whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)
-    :param layer: int indicating which hidden state layer to use.
-    :param task: finetuning task, only used for 'pt' or 'wt' embedding extraction.
+    :param embedding_type: string specifying whether embeddings should be extracted from classification head (ft) or base pretrained model (pt) or shared dense layer (st)
+    :param pooling_mode: method of pooling embeddings if required ("mean" or "sum")
     :return embeddings: an np array containing the embeddings
     """
 
@@ -238,7 +237,7 @@ def embedding_extraction(model, dataloader, embedding_type='ft'):
                 x = x.cuda()
             except:
                 x = x.to(device)
-            e = model.extract_embedding(x, embedding_type)
+            e = model.extract_embedding(x, embedding_type, pooling_mode)
             e = e.cpu().numpy()
             if embeddings.size == 0:
                 embeddings = e

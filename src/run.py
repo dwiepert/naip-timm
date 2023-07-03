@@ -1,7 +1,7 @@
 '''
 ECAPA-TDNN run function 
 
-Last modified: 06/2023
+Last modified: 07/2023
 Author: Daniela Wiepert
 Email: wiepert.daniela@mayo.edu
 File: run.py
@@ -11,6 +11,7 @@ File: run.py
 #built-in
 import argparse
 import ast
+import itertools
 import os
 import pickle
 
@@ -71,8 +72,10 @@ def train_timm(args):
     eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     
     # (4) initialize model
-    model = timmForSpeechClassification(args.model_type, args.target_length, args.num_mel_bins,
-                                        args.n_class, args.activation, args.final_dropout, args.layernorm)
+    #spectrogram dims: args.target_length, args.num_mel_bins
+    model = timmForSpeechClassification(name=args.model_type, label_dim = args.n_class, shared_dense=args.shared_dense,
+                                        sd_bottleneck=args.sd_bottleneck, clf_bottleneck=args.clf_bottleneck,
+                                        activation=args.activation, final_dropout=args.final_dropout, layernorm=args.layernorm)
     
     #(5) run model
     model = train(model, train_loader, val_loader, 
@@ -81,7 +84,9 @@ def train_timm(args):
                   args.exp_dir, args.cloud, args.cloud_dir, args.bucket)
     
     print('Saving final model')
-    mdl_path = os.path.join(args.exp_dir, '{}_{}_{}_epoch{}_{}_mdl.pt'.format(args.dataset, args.n_class, args.optim, args.epochs, args.model_type))
+    path = os.path.join(args.exp_dir, '{}_{}_{}_epoch{}_{}'.format(args.dataset, np.sum(args.n_class), args.optim, args.epochs, args.model_type))
+
+    mdl_path = path + '_mdl.pt'
     torch.save(model.state_dict(), mdl_path)
 
     if args.cloud:
@@ -91,8 +96,8 @@ def train_timm(args):
     preds, targets = evaluation(model, eval_loader)
     
     print('Saving predictions and targets')
-    pred_path = os.path.join(args.exp_dir, '{}_{}_{}_epoch{}_{}_predictions.pt'.format(args.dataset, args.n_class, args.optim, args.epochs, args.model_type))
-    target_path = os.path.join(args.exp_dir, '{}_{}_{}_epoch{}_{}_targets.pt'.format(args.dataset, args.n_class, args.optim, args.epochs, args.model_type))
+    pred_path = path + "_predictions.pt"
+    target_path = path + '_targets.pt'
     torch.save(preds, pred_path)
     torch.save(targets, target_path)
 
@@ -140,8 +145,10 @@ def eval_only(args):
     eval_loader = torch.utils.data.DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, collate_fn=collate_fn)
     
     # (4) initialize model
-    model = timmForSpeechClassification(model_args.model_type, model_args.target_length, model_args.num_mel_bins, model_args.n_class, 
-                                        model_args.activation, model_args.final_dropout, model_args.layernorm)
+    #spectrogram dims: model_args.target_length, model_args.num_mel_bins
+    model = timmForSpeechClassification(name=model_args.model_type, label_dim = model_args.n_class, shared_dense=model_args.shared_dense,
+                                        sd_bottleneck=model_args.sd_bottleneck, clf_bottleneck=model_args.clf_bottleneck,
+                                        activation=model_args.activation, final_dropout=model_args.final_dropout, layernorm=model_args.layernorm)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sd = torch.load(args.trained_mdl_path, map_location=device)
@@ -197,20 +204,23 @@ def get_embeddings(args):
 
     
     # (4) initialize model
-    model = timmForSpeechClassification(model_args.model_type, model_args.target_length, model_args.num_mel_bins, 
-                                        model_args.n_class, model_args.activation, model_args.final_dropout, model_args.layernorm)
+    #spectrogram dims: model_args.target_length, model_args.num_mel_bins
+    model = timmForSpeechClassification(name=model_args.model_type, label_dim = model_args.n_class, shared_dense=model_args.shared_dense,
+                                        sd_bottleneck=model_args.sd_bottleneck, clf_bottleneck=model_args.clf_bottleneck,
+                                        activation=model_args.activation, final_dropout=model_args.final_dropout, layernorm=model_args.layernorm)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sd = torch.load(args.trained_mdl_path, map_location=device)
     model.load_state_dict(sd, strict=False)
     
     # (5) get embeddings
-    embeddings = embedding_extraction(model, loader, args.embedding_type)
+    embeddings = embedding_extraction(model, loader, args.embedding_type, args.pooling_mode)
         
     df_embed = pd.DataFrame([[r] for r in embeddings], columns = ['embedding'], index=annotations_df.index)
+    path = '{}/{}_{}_embeddings'.format(args.exp_dir, args.dataset, args.embedding_type)
 
     try:
-        pqt_path = '{}/{}_{}_embeddings.pqt'.format(args.exp_dir, args.dataset, args.embedding_type)
+        pqt_path = path + '.pqt'
         
         df_embed.to_parquet(path=pqt_path, index=True, engine='pyarrow') 
 
@@ -218,7 +228,7 @@ def get_embeddings(args):
             upload(args.cloud_dir, pqt_path, args.bucket)
     except:
         print('Unable to save as pqt, saving instead as csv')
-        csv_path = '{}/{}_{}_embeddings.csv'.format(args.exp_dir, args.dataset, args.embedding_type)
+        csv_path = path + '.csv'
         df_embed.to_csv(csv_path, index=True)
 
         if args.cloud:
@@ -248,7 +258,10 @@ def main():
     parser.add_argument('--cloud_dir', default='', type=str, help="if saving to the cloud, you can specify a specific place to save to in the CLOUD bucket")
     #Mode specific
     parser.add_argument("-m", "--mode", choices=['train','eval','extraction'], default='train')
-    parser.add_argument('--embedding_type', type=str, default='ft', help='specify whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)', choices=['ft','pt'])
+    parser.add_argument("--shared_dense", type=ast.literal_eval, default=False, help="specify whether to add an additional shared dense layer before the classifier(s)")
+    parser.add_argument("--sd_bottleneck", type=int, default=768, help="specify whether to decrease when using shared_dense layer")
+    parser.add_argument('--embedding_type', type=str, default=None, help='specify whether embeddings should be extracted from classification head (ft), base pretrained model (pt), or shared dense layer (st)', choices=['ft','pt', 'st', None])
+    parser.add_argument('--pooling_mode', default='mean', choices=['mean','sum'],help='specify how to pool embeddings (mean, sum)')
     #Audio configuration parameters
     parser.add_argument("--resample_rate", default=16000,type=int, help='resample rate for audio files')
     parser.add_argument("--reduce", default=True, type=ast.literal_eval, help="Specify whether to reduce to monochannel")
@@ -283,6 +296,7 @@ def main():
     parser.add_argument("--activation", type=str, default='relu', help="specify activation function to use for classification head")
     parser.add_argument("--final_dropout", type=float, default=0.3, help="specify dropout probability for final dropout layer in classification head")
     parser.add_argument("--layernorm", type=ast.literal_eval, default=False, help="specify whether to include the LayerNorm in classification head")
+    parser.add_argument("--clf_bottleneck", type=int, default=768, help="specify whether to apply a bottleneck to initial classifier dense layer")
     #OTHER
     parser.add_argument("--debug", default=False, type=ast.literal_eval)
     args = parser.parse_args()
@@ -318,7 +332,8 @@ def main():
     if args.label_txt is None:
         assert args.mode == 'extraction', 'Must give a txt with target labels for training or evaluating.'
         args.target_labels = None
-        args.n_class = 0
+        args.label_groups=None
+        args.n_class = []
     else:
         if args.label_txt[:5] =='gs://':
             label_txt = args.label_txt[5:].replace(args.bucket_name,'')[1:]
@@ -331,12 +346,12 @@ def main():
     
         with open(label_txt) as f:
             target_labels = f.readlines()
-        target_labels = [l.strip() for l in target_labels]
-        args.target_labels = target_labels
+        target_labels = [l.strip().split(sep=",") for l in target_labels]
+        args.label_groups = target_labels 
+        args.target_labels = list(itertools.chain.from_iterable(target_labels))
+        args.n_class = [len(l) for l in args.label_groups]
 
-        args.n_class = len(target_labels)
-
-        if args.n_class == 0:
+        if args.n_class == []:
             assert args.mode == 'extraction', 'Target labels must be given for training or evaluating. Txt file was empty.'
 
 
@@ -352,12 +367,17 @@ def main():
             args.batch_size = 1
     
     # (7) dump arguments
-    args_path = "%s/args.pkl" % args.exp_dir
-    with open(args_path, "wb") as f:
-        pickle.dump(args, f)
-    #in case of error, everything is immediately uploaded to the bucket
-    if args.cloud:
-        upload(args.cloud_dir, args_path, bucket)
+    if args.mode=='train':
+        #only save args if training a model. 
+        args_path = "%s/args.pkl" % args.exp_dir
+        assert not os.path.exists(args_path), 'Current experiment directory already has an args.pkl file. Please change experiment directory or rename the args.pkl to avoid overwriting the file.'
+
+        with open(args_path, "wb") as f:
+            pickle.dump(args, f)
+        
+        #in case of error, everything is immediately uploaded to the bucket
+        if args.cloud:
+            upload(args.cloud_dir, args_path, bucket)
 
     # (8) check if trained model is stored in gcs bucket or confirm it exists on local machine
     if args.trained_mdl_path is not None:

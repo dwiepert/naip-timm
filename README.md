@@ -92,7 +92,7 @@ There are many possible arguments to set, including all the parameters associate
 * `-i, --prefix`: sets the `prefix` or input directory. Compatible with both local and GCS bucket directories containing audio files, though do not include 'gs://'
 * `-s, --study`: optionally set the study. You can either include a full path to the study in the `prefix` arg or specify some parent directory in the `prefix` arg containing more than one study and further specify which study to select here.
 * `-d, --data_split_root`: sets the `data_split_root` directory or a full path to a single csv file. For classification, it must be  a directory containing a train.csv and test.csv of file names. If runnning embedding extraction, it should be a csv file. Running evaluation only can accept either a directory or a csv file. This path should include 'gs://' if it is located in a bucket. 
-* `-l, --label_txt`: sets the `label_txt` path. This is a full file path to a .txt file contain a list of the target labels for selection (see [labels.txt](https://github.com/dwiepert/mayo-ssast/blob/main/labels.txt))
+* `-l, --label_txt`: sets the `label_txt` path. This is a full file path to a .txt file contain a list of the target labels for selection (see [labels.txt](https://github.com/dwiepert/mayo-timm/blob/main/labels.txt). Features in same classifier group should be split by ',', each feature classifier group should be split by '/n'). If stored in a bucket it If it is empty, it will require that embedding extraction be running.
 * `--lib`: : specifies whether to load using librosa (True) or torchaudio (False), default=False
 * `--trained_mdl_path`: specify a trained model if running evaluation only or extracting embeddings. This is a full file path to a pytorch model, and expects that whatever folder this is saved in includes an `args.pkl` file as well. 
 * `--model_type`: specify the timm model type to initialize. Default is 'efficientnet_b0'
@@ -109,7 +109,10 @@ There are many possible arguments to set, including all the parameters associate
 
 ### Run mode
 * `-m, --mode`: Specify the mode you are running, i.e., whether to run fine-tuning for classification ('finetune'), evaluation only ('eval-only'), or embedding extraction ('extraction'). Default is 'finetune'.
-* `--embedding_type`: specify whether embeddings should be extracted from classification head (ft) or base pretrained model (pt)
+* `--shared_dense`: specify whether to include a shared dense layer
+* `--sd_bottleneck`: specify bottleneck for shared dense layer
+* `--embedding_type`: specify whether embeddings should be extracted from classification head (ft), base pretrained model (pt), or shared dense layer (st)
+* `--pooling_mode`: specify how to pool embeddings if there are multiple classification heads, should be either 'mean' or 'sum'
 
 ### Audio transforms
 see the audio configurations section for which arguments to set
@@ -129,6 +132,7 @@ see the audio configurations section for which arguments to set
 * `--activation`: specify activation function to use for classification head
 * `--final_dropout`: specify dropout probability for final dropout layer in classification head
 * `--layernorm`: specify whether to include the LayerNorm in classification head
+* `--clf_bottleneck`: specify bottleneck for classifier initial dense layer
 
 For more information on arguments, you can also run `python run.py -h`. 
 
@@ -140,7 +144,11 @@ You can train a timm model from scratch for classifying speech features using th
 
 This mode is triggered by setting `-m, --mode` to 'train'. 
 
-The classification head can be altered to use a different amount of dropout and to include/exclude layernorm. See `ClassificationHead` class in [speech_utils.py](https://github.com/dwiepert/mayo-timm/blob/main/src/utilities/speech_utils.py) for more information. 
+You can add a shared dense layer prior to the classification head(s) by specifying  `--shared_dense` along with `--sd_bottleneck` to designate the output size for the shared dense layer. 
+
+Classification head(s) can be implemented in the following manner:
+1. Specify `--clf_bottleneck` to designate output for initial linear layer 
+2. Give `label_dims` as a list of dimensions or a single int. If given as a list, it will make a number of classifiers equal to the number of dimensions given, with each dimension indicating the output size of the classifier (e.g. [2, 1] will make a classifier with an output of (batch_size, 2) and one with an output of (batch_size, 1). The outputs then need to be stacked by columns to make one combined prediction). In order to do this in `run.py`, you must give a label_txt in the following format: split labels with a ',' to specify a group of features to be fed to one classifier; split with a new line '/n' to specify a new classifier. Note that `args.target_labels` should be a flat list of features, but `args.label_groups` should be a list of lists. 
 
 Additionally, there are data augmentation transforms available for finetuning, such as time shift, speed tuning, adding noise, pitch shift, gain, stretching audio, and audio mixup. 
 
@@ -156,4 +164,8 @@ Embedding extraction is triggered by setting `-m, --mode` to 'extraction'.
 
 You must also consider where you want the embeddings to be extracted from. The options are as follows:
 1. From the output of the base ECAPA-TDNN model? Set `embedding_type` to 'pt'. 
-2. From a layer in the classification head? Set `embedding_type` to 'ft'. This version will always return the output from the first dense layer in the classification head, prior to any activation function or normalization. 
+2. From a layer in the classification head? Set `embedding_type` to 'ft'. This version requires specification of `pooling_mode` to merge embeddings if there are multiple classifiers. It only accepts "mean" or "sum" for merging, and if nothing is specified it will use the pooling_mode set with the model. It will always return the output from the first dense layer in the classification head, prior to any activation function or normalization. 
+3. After a shared dense layer? Set `embedding_type` to 'st'. This version requires that the model was initially trained with `shared_dense` set to True.
+
+Brief note on target labels:
+Embedding extraction is the only mode where target labels are not required. You can give None or an empty list or np.array and it will still function and extract embeddings.

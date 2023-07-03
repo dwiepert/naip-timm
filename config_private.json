@@ -28,7 +28,10 @@
             "--exp_dir=./experiments",
             "--cloud_dir=m144443/vertex/mayo-timm/train",
             "--mode=train",
+            "--shared_dense=False",
+            "--sd_bottleneck=150",
             "--embedding_type=None",
+            "--pooling_mode=mean",
             "--resample_rate=16000",
             "--reduce=True",
             "--clip_length=10.0",
@@ -59,6 +62,7 @@
             "--activation=relu",
             "--final_dropout=0.3",
             "--layernorm=False",
+            "--clf_bottleneck=150",
             "--debug=False"
           ]
         }

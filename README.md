@@ -1,7 +1,7 @@
-# TIMM for Mayo Data
+# TIMM for NAIP Data
 This is a flexible implementation for training timm models from scratch. It is compatible with different timm model implementations. 
 
-The command line usable, start-to-finish implementation for Mayo speech data is available with [run.py](https://github.com/dwiepert/mayo-timm/blob/main/src/run.py). A notebook tutorial version is also available at [run.ipynb](https://github.com/dwiepert/mayo-timm/blob/main/src/run.ipynb). 
+The command line usable, start-to-finish implementation for NAIP speech data is available with [run.py](https://github.com/dwiepert/naip-timm/blob/main/src/run.py). A notebook tutorial version is also available at [run.ipynb](https://github.com/dwiepert/naip-timm/blob/main/src/run.ipynb). 
 
 
 ## Running requirements
@@ -53,11 +53,11 @@ DATA SPLIT DIR
     -- test.csv
     
 ## Audio Configuration
-Data is loaded using an `AudioDataset` class, where you pass a dataframe of the file names (UIDs) along with columns containing label data, a list of the target labels (columns to select from the df), specify audio configuration, method of loading, and initialize transforms on the raw waveform and spectrogram (see [dataloader.py](https://github.com/dwiepert/mayo-timm/blob/main/src/dataloader.py)). You will need to access the fbank (input) and labels as follows: batch['fbank'], batch['targets]. 
+Data is loaded using an `AudioDataset` class, where you pass a dataframe of the file names (UIDs) along with columns containing label data, a list of the target labels (columns to select from the df), specify audio configuration, method of loading, and initialize transforms on the raw waveform and spectrogram (see [dataloader.py](https://github.com/dwiepert/naip-timm/blob/main/src/dataloader.py)). You will need to access the fbank (input) and labels as follows: batch['fbank'], batch['targets]. 
 
 To specify audio loading method, you can alter the `bucket` variable and `librosa` variable. As a default, `bucket` is set to None, which will force loading from the local machine. If using GCS, pass a fully initialized bucket. Setting the `librosa` value to 'True' will cause the audio to be loaded using librosa rather than torchaudio. 
 
-The audio configuration parameters should be given as a dictionary (which can be seen in [run.py](https://github.com/dwiepert/mayo-timm/blob/main/src/runpy) and [run.ipynb](https://github.com/dwiepert/mayo-timm/blob/main/src/run.ipynb). Most configuration values are for initializing audio and spectrogram transforms. The transform will only be initialized if the value is not 0. If you have a further desire to add transforms, see [speech_utils.py](https://github.com/dwiepert/mayo-timm/blob/main/src/utilities/speech_utils.py)) and alter [dataloader.py](https://github.com/dwiepert/mayo-timm/blob/main/src/dataloader.py) accordingly. 
+The audio configuration parameters should be given as a dictionary (which can be seen in [run.py](https://github.com/dwiepert/naip-timm/blob/main/src/runpy) and [run.ipynb](https://github.com/dwiepert/naip-timm/blob/main/src/run.ipynb). Most configuration values are for initializing audio and spectrogram transforms. The transform will only be initialized if the value is not 0. If you have a further desire to add transforms, see [speech_utils.py](https://github.com/dwiepert/naip-timm/blob/main/src/utilities/speech_utils.py)) and alter [dataloader.py](https://github.com/dwiepert/naip-timm/blob/main/src/dataloader.py) accordingly. 
 
 The following parameters are accepted (`--` indicates the command line argument to alter to set it):
 
@@ -92,7 +92,7 @@ There are many possible arguments to set, including all the parameters associate
 * `-i, --prefix`: sets the `prefix` or input directory. Compatible with both local and GCS bucket directories containing audio files, though do not include 'gs://'
 * `-s, --study`: optionally set the study. You can either include a full path to the study in the `prefix` arg or specify some parent directory in the `prefix` arg containing more than one study and further specify which study to select here.
 * `-d, --data_split_root`: sets the `data_split_root` directory or a full path to a single csv file. For classification, it must be  a directory containing a train.csv and test.csv of file names. If runnning embedding extraction, it should be a csv file. Running evaluation only can accept either a directory or a csv file. This path should include 'gs://' if it is located in a bucket. 
-* `-l, --label_txt`: sets the `label_txt` path. This is a full file path to a .txt file contain a list of the target labels for selection (see [labels.txt](https://github.com/dwiepert/mayo-timm/blob/main/labels.txt). Features in same classifier group should be split by ',', each feature classifier group should be split by '/n'). If stored in a bucket it If it is empty, it will require that embedding extraction be running.
+* `-l, --label_txt`: sets the `label_txt` path. This is a full file path to a .txt file contain a list of the target labels for selection (see [labels.txt](https://github.com/dwiepert/naip-timm/blob/main/labels.txt). Features in same classifier group should be split by ',', each feature classifier group should be split by '/n'). If stored in a bucket it If it is empty, it will require that embedding extraction be running.
 * `--lib`: : specifies whether to load using librosa (True) or torchaudio (False), default=False
 * `--trained_mdl_path`: specify a trained model if running evaluation only or extracting embeddings. This is a full file path to a pytorch model, and expects that whatever folder this is saved in includes an `args.pkl` file as well. 
 * `--model_type`: specify the timm model type to initialize. Default is 'efficientnet_b0'
@@ -140,7 +140,7 @@ For more information on arguments, you can also run `python run.py -h`.
 This implementation contains many functionality options as listed below:
 
 ### 1. Training from scratch
-You can train a timm model from scratch for classifying speech features using the `timmForSpeechClassification` class in [timm_models.py](https://github.com/dwiepert/mayo-timm/blob/main/src/models/timm_models.py) and the `train(...)` function in [loops.py](https://github.com/dwiepert/mayo-timm/blob/main/src/loops.py).
+You can train a timm model from scratch for classifying speech features using the `timmForSpeechClassification` class in [timm_models.py](https://github.com/dwiepert/naip-timm/blob/main/src/models/timm_models.py) and the `train(...)` function in [loops.py](https://github.com/dwiepert/naip-timm/blob/main/src/loops.py).
 
 This mode is triggered by setting `-m, --mode` to 'train'. 
 

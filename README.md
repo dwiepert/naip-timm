@@ -96,6 +96,9 @@ There are many possible arguments to set, including all the parameters associate
 * `--lib`: : specifies whether to load using librosa (True) or torchaudio (False), default=False
 * `--trained_mdl_path`: specify a trained model if running evaluation only or extracting embeddings. This is a full file path to a pytorch model, and expects that whatever folder this is saved in includes an `args.pkl` file as well. 
 * `--model_type`: specify the timm model type to initialize. Default is 'efficientnet_b0'
+* `--val_size`: Specify size of validation set to generate
+* `--seed`: Specify a seed for random number generator to make validation set consistent across runs. Accepts None or any valid RandomState input (i.e., int)
+    
 
 ### Google cloud storage
 * `-b, --bucket_name`: sets the `bucket_name` for GCS loading. Required if loading from cloud.

@@ -39,7 +39,7 @@ def train_timm(args):
     print('Running training: ')
     # (1) load data
     assert '.csv' not in args.data_split_root, f'May have given a full file path, please confirm this is a directory: {args.data_split_root}'
-    train_df, val_df, test_df = load_data(args.data_split_root, args.target_labels, args.exp_dir, args.cloud, args.cloud_dir, args.bucket)
+    train_df, val_df, test_df = load_data(args.data_split_root, args.target_labels, args.exp_dir, args.cloud, args.cloud_dir, args.bucket, args.val_size, args.seed)
 
     if args.debug:
         train_df = train_df.iloc[0:8,:]
@@ -125,7 +125,7 @@ def eval_only(args):
         
         eval_df = eval_df.dropna(subset=args.target_labels)
     else:
-        train_df, val_df, eval_df = load_data(args.data_split_root, args.target_labels, args.exp_dir, args.cloud, args.cloud_dir, args.bucket)
+        train_df, val_df, eval_df = load_data(args.data_split_root, args.target_labels, args.exp_dir, args.cloud, args.cloud_dir, args.bucket, args.val_size, args.seed)
     
     if args.debug:
         eval_df = eval_df.iloc[0:8,:]
@@ -248,6 +248,8 @@ def main():
     parser.add_argument('--lib', default=False, type=ast.literal_eval, help="Specify whether to load using librosa as compared to torch audio")
     parser.add_argument("--trained_mdl_path", default=None, help="specify path to trained model")
     parser.add_argument("--model_type", default='efficientnet_b0', help='specify the timm model type to initialize')
+    parser.add_argument("--val_size", default=50, type=int, help="Specify size of validation set to generate")
+    parser.add_argument("--seed", default=None, help='Specify a seed for random number generator to make validation set consistent across runs. Accepts None or any valid RandomState input (i.e., int)')
     #GCS
     parser.add_argument('-b','--bucket_name', default=None, help="google cloud storage bucket name")
     parser.add_argument('-p','--project_name', default=None, help='google cloud platform project name')

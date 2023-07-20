@@ -147,7 +147,7 @@ You can train a timm model from scratch for classifying speech features using th
 
 This mode is triggered by setting `-m, --mode` to 'train'. 
 
-You can add a shared dense layer prior to the classification head(s) by specifying  `--shared_dense` along with `--sd_bottleneck` to designate the output size for the shared dense layer. 
+You can add a shared dense layer prior to the classification head(s) by specifying  `--shared_dense` along with `--sd_bottleneck` to designate the output size for the shared dense layer. Note that the shared dense layer is followed by ReLU activation. Furthermore, if `shared_dense` is False, it will create an Identity layer so as to avoid if statements in the forward loop. 
 
 Classification head(s) can be implemented in the following manner:
 1. Specify `--clf_bottleneck` to designate output for initial linear layer 

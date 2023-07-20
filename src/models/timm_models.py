@@ -8,6 +8,8 @@ Email: wiepert.daniela@mayo.edu
 File: timm_models.py
 '''
 
+from collections import OrderedDict
+
 import torch
 import torch.nn as  nn
 import torch.nn.functional as F
@@ -50,9 +52,10 @@ class timmForSpeechClassification(nn.Module):
         #adding a shared dense layer
         self.shared_dense = shared_dense
         if self.shared_dense:
-            self.dense = nn.Linear(self.embedding_dim, self.sd_bottleneck)
+            self.dense = nn.Sequential(OrderedDict([('dense',nn.Linear(self.embedding_dim, self.sd_bottleneck)), ('relu',nn.ReLU())]))
             self.clf_input = self.sd_bottleneck
         else:
+            self.dense = nn.Identity()
             self.clf_input = self.embedding_dim
 
         self.classifiers = []
@@ -84,8 +87,8 @@ class timmForSpeechClassification(nn.Module):
                 return _hook
             
             x = self.model(x)
-            if self.shared_dense:
-                x = self.dense(x)
+  
+            x = self.dense(x)
             
             embeddings = []
             for clf in self.classifiers:
@@ -117,8 +120,8 @@ class timmForSpeechClassification(nn.Module):
         :return: classifier output (batch_size, num_labels)
         """
         x = self.model(x)
-        if self.shared_dense:
-            x = self.dense(x)
+
+        x = self.dense(x)
 
         preds = []
         for clf in self.classifiers:

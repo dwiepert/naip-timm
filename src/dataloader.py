@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Audio Dataset functions for SSAST
+Audio Dataset functions for timm models
 Reformated and edited based on code from Yuan Gong (https://github.com/YuanGongND/ssast/tree/main/src/dataloader.py) and David Harwath
 some functions borrowed from https://github.com/SeanNaren/deepspeech.pytorch
 

@@ -2,10 +2,11 @@
 Sample audio Dataset format (WaveformDataset) + transformation classes.
 Classification head
 
+
 Transforms from SSAST added (https://github.com/YuanGongND/ssast/tree/main/src/run.py)
 
 Author(s): Neurology AI Program (NAIP) at Mayo Clinic
-Last modified: 07/2023
+Last modified: 11/2023
 '''
 #IMPORTS
 #built-in
@@ -29,7 +30,7 @@ import torch.nn.functional
 from torch.utils.data import Dataset
 
 from albumentations.core.transforms_interface import DualTransform, BasicTransform
-from google.cloud import storage, bigquery
+from google.cloud import storage
 from torch.utils.data import Dataset
 
 
@@ -207,7 +208,8 @@ def load_waveform_local(input_dir, uid, extension = None, lib=False):
     '''
     
     metadata_path = f'{input_dir}/{uid}/metadata.json'
-    metadata = json.loads(metadata_path)
+    with open(metadata_path) as f:
+        metadata = json.load(f)
     
     if extension is None:
         if metadata['encoding'] == 'MP3':
@@ -781,44 +783,4 @@ class Wav2Fbank(object):
 
         if self.override_wave:
             del sample['waveform']
-        return sample
-    
-class MFCC(object):
-    
-    def __init__(self, n_fft=16000, n_mels=128, n_mfcc=80):
-        
-        self.n_mfcc = n_mfcc
-        self.n_fft = n_fft
-        self.n_mels = n_mels
-        
-    def __call__(self, sample):
-        
-        """
-        Convert pytorch audio waveform to mel spectrogram
-
-        :param waveform: torch audio
-        :type waveform: tensor object
-        :param n_fft: number of (output) frequency bins
-        :type n_fft: int
-        :param n_mels: number of mels
-        :type n_fft: int
-        :return: mel spectrogram
-        """
-        
-        waveform, sample_rate = sample['waveform'], sample['sample_rate']
-        
-        
-        mfcc = torchaudio.transforms.MFCC(
-            sample_rate=sample_rate,
-            n_mfcc = self.n_mfcc,
-            melkwargs = {
-                    "n_fft":self.n_fft,
-                    "norm":'slaney',
-                    "n_mels":self.n_mels,
-                    "mel_scale":"htk",
-                },
-        )
-
-        sample['mfcc'] = mfcc(waveform)
-        
         return sample

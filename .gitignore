@@ -2,3 +2,6 @@
 .vscode/launch.json
 src/__pycache__/dataloader.cpython-39.pyc
 *.pyc
+.DS_Store
+config_private.json
+submit_job_ex.ipynb
